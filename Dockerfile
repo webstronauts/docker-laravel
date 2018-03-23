@@ -67,7 +67,9 @@ ONBUILD COPY composer* package.json yarn.lock /app/
 
 # Install all dependencies.
 ONBUILD RUN composer install --prefer-dist --no-interaction --no-autoloader --no-scripts \
-      && yarn install --frozen-lockfile
+      && composer clear-cache \
+      && yarn install --frozen-lockfile \
+      && yarn cache clean
 
 # Copy all other files.
 ONBUILD COPY . .
