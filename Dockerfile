@@ -58,7 +58,7 @@ WORKDIR /app
 ONBUILD COPY config/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Overwrite default PHP configuration.
-ONBUILD COPY config/php.ini /usr/local/etc/php/conf.d/00-docker.ini
+ONBUILD COPY .user.ini /usr/local/etc/php/conf.d/00-docker.ini
 
 # Copy over Composer and NPM files first and install any dependencies.
 # Because we do not copy "all" application files, we can make better
