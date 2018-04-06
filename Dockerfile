@@ -15,23 +15,27 @@ ENV COMPOSER_ALLOW_SUPERUSER 1
 
 # Install base packages.
 RUN apt-get update \
-      && apt-get install -y gnupg
+      && apt-get install -y gnupg software-properties-common
 
 # Add official Node.js and Yarn repositories.
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
       && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
       && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 
+# Add the libv8 PPA
+RUN add-apt-repository -y ppa:pinepain/libv8
+
 # Install required packages.
 RUN apt-get update \
-      && apt-get install -y autoconf build-essential git libpq-dev nginx nodejs yarn zip
+      && apt-get install -y autoconf build-essential git libpq-dev nginx nodejs yarn zip \
+      && rm -rf /var/lib/apt/lists/*
 
 # Install required PHP extensions.
 RUN docker-php-ext-install opcache pcntl pdo_pgsql
 
-# Install APCu extension through PECL.
-RUN pecl install apcu xdebug \
-      && docker-php-ext-enable apcu
+# Install additional extensions through PECL.
+RUN pecl install apcu mongodb xdebug \
+      && docker-php-ext-enable apcu mongodb
 
 # Enable XDebug when PHP executable is direcly accessed.
 RUN echo "alias php=\"php -dzend_extension=xdebug.so\"" > /root/.bashrc
