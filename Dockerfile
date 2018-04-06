@@ -15,15 +15,12 @@ ENV COMPOSER_ALLOW_SUPERUSER 1
 
 # Install base packages.
 RUN apt-get update \
-      && apt-get install -y gnupg software-properties-common
+      && apt-get install -y gnupg
 
 # Add official Node.js and Yarn repositories.
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
       && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
       && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-
-# Add the libv8 PPA
-RUN add-apt-repository -y ppa:pinepain/libv8
 
 # Install required packages.
 RUN apt-get update \
