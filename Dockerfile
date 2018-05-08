@@ -1,4 +1,4 @@
-FROM nginx:1.13
+FROM nginx:1.13 AS nginx
 FROM php:7.2-fpm
 
 # Expose NGINX's default port
@@ -24,7 +24,7 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
 
 # Install required packages.
 RUN apt-get update \
-      && apt-get install -y autoconf build-essential git libpq-dev nginx nodejs yarn zip \
+      && apt-get install -y autoconf build-essential git libpq-dev nginx nodejs ruby-full yarn zip \
       && rm -rf /var/lib/apt/lists/*
 
 # Install required PHP extensions.
@@ -38,28 +38,21 @@ RUN pecl install apcu mongodb xdebug \
 RUN echo "alias php=\"php -dzend_extension=xdebug.so\"" > /root/.bashrc
 
 # Copy "Docker optimized" NGINX configuration file from previous stage.
-COPY --from=0 /etc/nginx/nginx.conf /etc/nginx/nginx.conf
-
-# Forward NGINX request and error logs to docker log collector
-RUN ln -sf /dev/stdout /var/log/nginx/access.log \
-      && ln -sf /dev/stderr /var/log/nginx/error.log
+COPY --from=nginx /etc/nginx/nginx.conf /etc/nginx/nginx.conf
 
 # Download and install Composer.
 RUN curl -sS https://getcomposer.org/installer | php \
       && mv composer.phar /usr/local/bin/ \
       && ln -s /usr/local/bin/composer.phar /usr/local/bin/composer
 
+# Install Foreman (used by heroku-buildpack-php).
+RUN gem install -no-ri --no-rdoc foreman
+
 # Create application-specific directory.
 RUN mkdir /app
 
 # Set application directory as default working directory.
 WORKDIR /app
-
-# Overwrite default NGINX configuration.
-ONBUILD COPY config/nginx.conf /etc/nginx/conf.d/default.conf
-
-# Overwrite default PHP configuration.
-ONBUILD COPY .docker.ini* /usr/local/etc/php/conf.d/00-docker.ini
 
 # Copy over Composer and NPM files first and install any dependencies.
 # Because we do not copy "all" application files, we can make better
@@ -80,3 +73,5 @@ ONBUILD RUN composer dump-autoload --optimize --apcu
 
 # Compile all front-end assets.
 ONBUILD RUN yarn build
+
+ENTRYPOINT ["/bin/bash"]
