@@ -73,5 +73,3 @@ ONBUILD RUN composer dump-autoload --optimize --apcu
 
 # Compile all front-end assets.
 ONBUILD RUN yarn build
-
-ENTRYPOINT ["/bin/bash"]
