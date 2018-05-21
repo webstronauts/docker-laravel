@@ -60,7 +60,7 @@ WORKDIR /app
 ONBUILD COPY composer* package.json yarn.lock /app/
 
 # Install all dependencies.
-ONBUILD RUN composer install --prefer-dist --no-interaction --no-autoloader --no-scripts \
+ONBUILD RUN composer install --prefer-dist --no-interaction --no-autoloader --no-suggest --no-scripts \
       && composer clear-cache \
       && yarn install --frozen-lockfile \
       && yarn cache clean
