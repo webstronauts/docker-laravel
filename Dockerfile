@@ -28,11 +28,11 @@ RUN apt-get update \
       && rm -rf /var/lib/apt/lists/*
 
 # Install required PHP extensions.
-RUN docker-php-ext-install opcache pcntl pdo_pgsql
+RUN docker-php-ext-install gmp opcache pcntl pdo_pgsql
 
 # Install additional extensions through PECL.
 RUN pecl install apcu mongodb xdebug \
-      && docker-php-ext-enable apcu gmp mongodb
+      && docker-php-ext-enable apcu mongodb
 
 # Enable XDebug when PHP executable is direcly accessed.
 RUN echo "alias php=\"php -dzend_extension=xdebug.so\"" > /root/.bashrc
