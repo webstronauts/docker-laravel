@@ -1,75 +1,94 @@
-FROM nginx:1.13 AS nginx
-FROM php:7.2-fpm
+# Use Alpine v3.7.
+FROM alpine:3.7
 
-# Expose NGINX's default port
-EXPOSE 80
+# Image maintainer.
+LABEL maintainer="robin@webstronauts.co"
+
+# Expose a sensible default port.
+EXPOSE 8000
+
+RUN addgroup -g 1000 www-data \
+    && adduser -u 1000 -G www-data -s /bin/sh -D www-data
+
+# Trust the codecasts' public key to trust the packages.
+ADD https://php.codecasts.rocks/php-alpine.rsa.pub /etc/apk/keys/php-alpine.rsa.pub
+
+# Make sure you can use HTTPS.
+RUN apk add --no-cache ca-certificates \
+    # And add the APK repository.
+    && echo "@php https://php.codecasts.rocks/v3.7/php-7.2" >> /etc/apk/repositories
+
+# Install PHP and some extensions. Notice the @php is required to
+# avoid getting default php packages from alpine instead.
+RUN apk add --no-cache \
+      curl \
+      nginx \
+      supervisor \
+      tini \
+      php@php \
+      php-apcu@php \
+      php-ctype@php \
+      php-curl@php \
+      php-dom@php \
+      php-fpm@php \
+      php-json@php \
+      php-mbstring@php \
+      php-opcache@php \
+      php-openssl@php \
+      php-pcntl@php \
+      php-pdo@php \
+      php-pdo_pgsql@php \
+      php-phar@php \
+      php-posix@php \
+      php-session@php \
+      php-xml@php \
+      php-zlib@php \
+    && ln -s /usr/bin/php7 /usr/bin/php \
+    && ln -s /usr/sbin/php-fpm7 /usr/sbin/php-fpm \
+    && mkdir -p /run/nginx \
+    && mkdir -p /run/php
 
 # Expose installed executables to the $PATH env var.
-ENV PATH "~/.composer/vendor/bin:./vendor/bin:./node_modules/.bin:${PATH}"
-
-# Expose Node.js binary path as env var.
-ENV NODE_PATH "/usr/bin/node"
-
-# Allow Composer to be run as root.
-ENV COMPOSER_ALLOW_SUPERUSER 1
-
-# Install base packages.
-RUN apt-get update \
-      && apt-get install -y gnupg
-
-# Add official Node.js and Yarn repositories.
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
-      && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
-      && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-
-# Install required packages.
-RUN apt-get update \
-      && apt-get install -y autoconf build-essential git libpq-dev nginx nodejs ruby-full yarn zip \
-      && rm -rf /var/lib/apt/lists/*
-
-# Install required PHP extensions.
-RUN docker-php-ext-install gmp opcache pcntl pdo_pgsql
-
-# Install additional extensions through PECL.
-RUN pecl install apcu mongodb xdebug \
-      && docker-php-ext-enable apcu mongodb
-
-# Enable XDebug when PHP executable is direcly accessed.
-RUN echo "alias php=\"php -dzend_extension=xdebug.so\"" > /root/.bashrc
-
-# Copy "Docker optimized" NGINX configuration file from previous stage.
-COPY --from=nginx /etc/nginx/nginx.conf /etc/nginx/nginx.conf
+ENV PATH "~/.composer/vendor/bin:./vendor/bin:${PATH}"
 
 # Download and install Composer.
 RUN curl -sS https://getcomposer.org/installer | php \
-      && mv composer.phar /usr/local/bin/ \
-      && ln -s /usr/local/bin/composer.phar /usr/local/bin/composer
+    && mv composer.phar /usr/bin/ \
+    && ln -s /usr/bin/composer.phar /usr/bin/composer
 
-# Install Foreman (used by heroku-buildpack-php).
-RUN gem install -no-ri --no-rdoc foreman
+ADD rootfs /
 
-# Create application-specific directory.
-RUN mkdir /app
+RUN mkdir /app \
+    && chmod -R 775 /app \
+    && chown -R www-data:www-data /app
 
-# Set application directory as default working directory.
 WORKDIR /app
 
 # Copy over Composer and NPM files first and install any dependencies.
 # Because we do not copy "all" application files, we can make better
 # use of Docker's layered caching mechanism.
-ONBUILD COPY composer* package.json yarn.lock /app/
+ONBUILD COPY composer* /app/
 
-# Install all dependencies.
-ONBUILD RUN composer install --prefer-dist --no-interaction --no-autoloader --no-suggest --no-scripts \
-      && composer clear-cache \
-      && yarn install --frozen-lockfile \
-      && yarn cache clean
+ONBUILD RUN composer install \
+      --no-autoloader \
+      --no-dev \
+      --no-interaction \
+      --no-scripts \
+      --no-suggest \
+      --prefer-dist \
+    && composer clear-cache
 
-# Copy all other files.
 ONBUILD COPY . .
 
-# Dump Composer's autoloader, optimized with APCu.
-ONBUILD RUN composer dump-autoload --optimize --apcu
+ONBUILD RUN chown -R www-data:www-data \
+      /app/bootstrap/cache \
+      /app/storage
 
-# Compile all front-end assets.
-ONBUILD RUN yarn build
+# We can generate the autoloader only when all project's files are added.
+ONBUILD RUN composer dump-autoload \
+      --optimize \
+      --apcu
+
+ENTRYPOINT ["/sbin/tini", "--"]
+
+CMD [ "supervisord", "--nodaemon" ]
