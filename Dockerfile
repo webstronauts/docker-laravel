@@ -18,13 +18,12 @@ RUN apk add --no-cache ca-certificates \
     # And add the APK repository.
     && echo "@php https://php.codecasts.rocks/v3.7/php-7.2" >> /etc/apk/repositories
 
-# Install PHP and some extensions. Notice the @php is required to
-# avoid getting default php packages from alpine instead.
+# Install Nginx, PHP, Node.js and some additional extensions. Notice the @php is
+# required to avoid getting default php packages from alpine instead.
 RUN apk add --no-cache \
       curl \
       nginx \
-      supervisor \
-      tini \
+      nodejs \
       php@php \
       php-apcu@php \
       php-ctype@php \
@@ -43,6 +42,9 @@ RUN apk add --no-cache \
       php-session@php \
       php-xml@php \
       php-zlib@php \
+      supervisor \
+      tini \
+      yarn \
     && ln -s /usr/bin/php7 /usr/bin/php \
     && ln -s /usr/sbin/php-fpm7 /usr/sbin/php-fpm \
     && mkdir -p /run/nginx \
