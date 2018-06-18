@@ -7,8 +7,8 @@ LABEL maintainer="robin@webstronauts.co"
 # Expose a sensible default port.
 EXPOSE 8000
 
-RUN addgroup -g 1000 www-data \
-    && adduser -u 1000 -G www-data -s /bin/sh -D www-data
+RUN addgroup -g 82 www-data \
+    && adduser -u 82 -G www-data -s /bin/sh -D www-data
 
 # Trust the codecasts' public key to trust the packages.
 ADD https://php.codecasts.rocks/php-alpine.rsa.pub /etc/apk/keys/php-alpine.rsa.pub
@@ -65,31 +65,6 @@ RUN mkdir /app \
     && chown -R www-data:www-data /app
 
 WORKDIR /app
-
-# Copy over Composer and NPM files first and install any dependencies.
-# Because we do not copy "all" application files, we can make better
-# use of Docker's layered caching mechanism.
-ONBUILD COPY composer* /app/
-
-ONBUILD RUN composer install \
-      --no-autoloader \
-      --no-dev \
-      --no-interaction \
-      --no-scripts \
-      --no-suggest \
-      --prefer-dist \
-    && composer clear-cache
-
-ONBUILD COPY . .
-
-ONBUILD RUN chown -R www-data:www-data \
-      /app/bootstrap/cache \
-      /app/storage
-
-# We can generate the autoloader only when all project's files are added.
-ONBUILD RUN composer dump-autoload \
-      --optimize \
-      --apcu
 
 ENTRYPOINT ["/sbin/tini", "--"]
 
