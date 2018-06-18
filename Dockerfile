@@ -45,8 +45,10 @@ RUN apk add --no-cache \
       supervisor \
       tini \
       yarn \
-    && ln -s /usr/bin/php7 /usr/bin/php \
-    && ln -s /usr/sbin/php-fpm7 /usr/sbin/php-fpm \
+    && ln -sf /usr/bin/php7 /usr/bin/php \
+    && ln -sf /usr/sbin/php-fpm7 /usr/sbin/php-fpm \
+    && ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log \
     && mkdir -p /run/nginx \
     && mkdir -p /run/php
 
