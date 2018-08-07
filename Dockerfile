@@ -26,6 +26,7 @@ RUN apk add --no-cache \
       nginx \
       nodejs \
       php@php \
+      php-argon2@php \
       php-apcu@php \
       php-ctype@php \
       php-curl@php \
