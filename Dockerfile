@@ -21,6 +21,7 @@ RUN apk add --no-cache ca-certificates \
 # Install Nginx, PHP, Node.js and some additional extensions. Notice the @php is
 # required to avoid getting default php packages from alpine instead.
 RUN apk add --no-cache \
+      bash \
       curl \
       nginx \
       nodejs \
