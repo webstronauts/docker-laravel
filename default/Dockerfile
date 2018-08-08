@@ -23,6 +23,7 @@ RUN apk add --no-cache ca-certificates \
 RUN apk add --no-cache \
       bash \
       curl \
+      git \
       nginx \
       nodejs \
       php@php \
