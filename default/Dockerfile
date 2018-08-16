@@ -29,6 +29,7 @@ RUN apk add --no-cache \
       php@php \
       php-argon2@php \
       php-apcu@php \
+      php-bcmath@php \
       php-ctype@php \
       php-curl@php \
       php-dom@php \
